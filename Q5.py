@@ -38,6 +38,33 @@ class HopfieldedNetwork:
         pattern_2d = pattern.reshape(5, 5)
         return pattern_2d, iteration
 
+def add_noise(pattern, k):
+    """Flip k random bits in the pattern"""
+    noisy = pattern.copy()
+    flat = noisy.flatten()
+    flip_positions = np.random.choice(len(flat), k, replace=False)
+    for pos in flip_positions:
+        flat[pos] = -flat[pos]
+    return flat.reshape(5, 5)
+
+def test_recovery(net, original, k_values=[1, 3, 5]):
+    """Test recovery for different noise levels"""
+    print(f"\n{'='*50}")
+    print(f"Testing pattern:")
+    print(original)
+    
+    for k in k_values:
+        noisy = add_noise(original, k)
+        recovered, iterations = net.predict(noisy)
+        
+        success = np.array_equal(original, recovered)
+        
+        print(f"\n{'='*50}")
+        print(f"Noise level: k={k} flipped bits")
+        print(f"Noisy pattern:\n{noisy}")
+        print(f"Recovered pattern:\n{recovered}")
+        print(f"Success: {'YES' if success else 'NO'} (iterations={iterations})")
+
 if __name__ == "__main__":
     p1 = np.array([[ 1,  1,  1,  1,  1],
                    [ 1,  1,  1,  1,  1],
@@ -57,17 +84,16 @@ if __name__ == "__main__":
                    [-1,  1, -1,  1, -1],
                    [ 1, -1, -1, -1,  1]])
     
+    # Train network
     net = HopfieldedNetwork(25)
     net.train([p1, p2, p3])
-
-    corrupted = np.array([[ 1,  1,  1,  1,  1],
-                          [ 1,  1, -1,  1,  1],
-                          [-1, -1, -1, -1, -1],
-                          [ 1,  1,  1,  1,  1],
-                          [ 1,  1,  1,  1,  1]])
-
-    pred, iterations = net.predict(corrupted)
     
-    print(f"Recovered pattern:")
-    print(pred)
-    print(f"\nIterations: {iterations}")
+    # Test all patterns with different noise levels
+    np.random.seed(42)  # For reproducible results
+    
+    print("HOPFIELD NETWORK RECOVERY TEST")
+    print("="*50)
+    
+    test_recovery(net, p1, [1, 3, 5])
+    test_recovery(net, p2, [1, 3, 5])
+    test_recovery(net, p3, [1, 3, 5])
